@@ -1,151 +1,117 @@
-import tkinter as tk
-import random
-
-#Function to swap two bars that will be animated
-def swap(pos_0, pos_1):
-    bar11, _, bar12, _ = canvas.coords(pos_0)
-    bar21, _, bar22, _ = canvas.coords(pos_1)
-    canvas.move(pos_0, bar21-bar11, 0)
-    canvas.move(pos_1, bar12-bar22, 0)
-
-worker = None 
-
-#Insertion Sort
-def _insertion_sort():
-    global barList
-    global lengthList
-
-    for i in range(len(lengthList)):
-        cursor = lengthList[i]
-        cursorBar = barList[i]
-        pos = i
-
-        while pos > 0 and lengthList[pos - 1] > cursor:
-            lengthList[pos] = lengthList[pos - 1]
-            barList[pos], barList[pos - 1] = barList[pos - 1], barList[pos]
-            swap(barList[pos],barList[pos-1])   
-            yield                                      
-            pos -= 1                                   
-
-        lengthList[pos] = cursor
-        barList[pos] = cursorBar
-        swap(barList[pos],cursorBar)
-
-
-#Bubble Sort
-def _bubble_sort():
-    global barList
-    global lengthList
-    
-    for i in range(len(lengthList) - 1):
-        for j in range(len(lengthList) - i - 1):
-            if(lengthList[j] > lengthList[j + 1]):
-                lengthList[j] , lengthList[j + 1] = lengthList[j + 1] , lengthList[j]
-                barList[j], barList[j + 1] = barList[j + 1] , barList[j]
-                swap(barList[j + 1] , barList[j])
-                yield        
-           
-
-#Selection Sort            
-def _selection_sort():
-    global barList    
-    global lengthList
-
-    for i in range(len(lengthList)):
-        min = i
-        for j in range(i + 1 ,len(lengthList)):
-            if(lengthList[j] < lengthList[min]):
-                min = j
-        lengthList[min], lengthList[i] = lengthList[i] ,lengthList[min]
-        barList[min] , barList[i] = barList[i] , barList[min]
-        swap(barList[min] , barList[i])        
-        yield
-
-
-#Triggering Fuctions
-
-def insertion_sort():     
-    global worker
-    worker = _insertion_sort()
-    animate()
-
-def selection_sort():     
-    global worker
-    worker = _selection_sort()
-    animate()
-
-def bubble_sort():     
-    global worker
-    worker = _bubble_sort()
-    animate()    
+from email.mime import audio
+import pyttsx3 #pip install pyttsx3
+import speech_recognition as sr #pip install speechRecognition
+import datetime
+import wikipedia #pip install wikipedia
+import webbrowser
+import os
+import smtplib
 
 
 
-#Animation Function
-def animate():      
-    global worker
-    if worker is not None:
-        try:
-            next(worker)
-            window.after(10, animate)    
-        except StopIteration:            
-            worker = None
-        finally:
-            window.after_cancel(animate) 
+engine = pyttsx3.init('sapi5')
+voices = engine.getProperty('voices')
+# print(voices[1].id)
+engine.setProperty('voice', voices[0].id)
 
 
-#Generator function for generating data
-def generate():
-    global barList
-    global lengthList
-    canvas.delete('all')
-    barstart = 5
-    barend = 15
-    barList = []
-    lengthList = []
-
-    #Creating a rectangle
-    for bar in range(1, 60):
-        randomY = random.randint(1, 360)
-        bar = canvas.create_rectangle(barstart, randomY, barend, 365, fill='orange')
-        barList.append(bar)
-        barstart += 10
-        barend += 10
-
-    #Getting length of the bar and appending into length list
-    for bar in barList:
-        bar = canvas.coords(bar)
-        length = bar[3] - bar[1]
-        lengthList.append(length)
-
-    #Maximum is colored Red
-    #Minimum is colored Black
-    for i in range(len(lengthList)-1):
-        if lengthList[i] == min(lengthList):
-            canvas.itemconfig(barList[i], fill='red')
-        elif lengthList[i] == max(lengthList):
-            canvas.itemconfig(barList[i], fill='black')
+def speak(audio):
+    engine.say(audio)
+    engine.runAndWait()
 
 
+def wishMe():
+    hour = int(datetime.datetime.now().hour)
+    if hour>=0 and hour<12:
+        speak("Good Morning!")
 
-#Making a window using the Tk widget
-window = tk.Tk()
-window.title('Sorting Visualizer - By Raj D.')
-window.geometry('600x450')
+    elif hour>=12 and hour<18:
+        speak("Good Afternoon!")   
 
-#Making a Canvas within the window to display contents
-canvas = tk.Canvas(window, width='600', height='400')
-canvas.grid(column=0,row=0, columnspan = 50)
+    else:
+        speak("Good Evening!")  
 
-#Buttons
-insert = tk.Button(window, text='Insertion Sort', command=insertion_sort, width=10, height=1)
-select = tk.Button(window, text='Selection Sort', command=selection_sort, width=10, height=1)
-bubble = tk.Button(window, text='Bubble Sort', command=bubble_sort, width=10, height=1)
-shuf = tk.Button(window, text='Shuffle', command=generate, bg = "red", fg = "white", width=10, height=1)
-insert.grid(column=3,row=1)
-select.grid(column=2,row=1)
-bubble.grid(column=1,row=1)
-shuf.grid(column=0, row=1)
+    speak("I am Jarvis Sir. Please tell me how may I help you")       
 
-generate()
-window.mainloop()
+def takeCommand():
+    #It takes microphone input from the user and returns string output
+
+    r = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("Listening...")
+        r.pause_threshold = 1
+        audio = r.listen(source)
+
+    try:
+        print("Recognizing...")    
+        query = r.recognize_google(audio, language='en-in')
+        print(f"User said: {query}\n")
+
+    except Exception as e:
+        # print(e)    
+        print("Say that again please...")  
+        return "None"
+    return query
+
+def sendEmail(to, content):
+    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server.ehlo()
+    print("hello")
+    server.starttls()
+    server.login('youremail@gmail.com', 'your-password')
+    server.sendmail('youremail@gmail.com', to, content)
+    server.close()
+
+
+if __name__ == "__main__":
+    wishMe()
+    while True:
+    # if 1:ccccc 
+        query = takeCommand().lower()
+
+        # Logic for executing tasks based on query
+        if 'wikipedia' in query:
+            speak('Searching Wikipedia...')
+            query = query.replace("wikipedia", "")
+            results = wikipedia.summary(query, sentences=2)
+            speak("According to Wikipedia")
+            print(results)
+            speak(results)
+
+        # elif 'open youtube' in query:
+        #     webbrowser.open("youtube.com")
+
+        # elif 'open google' in query:
+        #     webbrowser.open("google.com")
+
+        elif 'open stackoverflow' in query:
+            webbrowser.open("stackoverflow.com")   
+
+        elif 'open' in query:
+            a=query.split()
+            b=a[1]
+            webbrowser.open(b+'.com')
+        elif 'play music' in query:
+            music_dir = 'C:\\Users\\BIJOY DAS\\Music\\Playlists'
+            songs = os.listdir(music_dir)
+            print(songs)    
+            os.startfile(os.path.join(music_dir, songs[3]))
+
+        elif 'the time' in query:
+            strTime = datetime.datetime.now().strftime("%H:%M:%S")    
+            speak(f"Sir, the time is {strTime}")
+
+        elif 'open code' in query:
+            codePath = "C:\\Users\\BIJOY DAS\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            os.startfile(codePath)
+        elif 'email to harry' in query:
+            try:
+                speak("What should I say?")
+                content = takeCommand()
+                to = "bijoydas351491@gmail.com"    
+                sendEmail(to, content)
+                speak("Email has been sent!")
+                print("mail has been sent")
+            except Exception as e:
+                print(e)
+                speak("Sorry my friend harry bhai. I am not able to send this email")    
